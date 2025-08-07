@@ -1,29 +1,43 @@
-import Home from "./pages/home";  
-import About from "./pages/About";
-import Counter from "./pages/Counter";
-import Input from "./pages/Input";
-import Input2 from "./pages/Input2";
-import List from "./pages/List";
-
-import React from "react";
-import { Routes, Route, Link } from "react-router-dom";
+import React, {useState, useEffect} from "react";
+import axios from "axios";
 
 function App() {
+  const [text, setText] = useState(""); 
+  const [messages, setMessages] = useState([]);
+
+ const fetchMessages = async () => {
+    const res = await axios.get("http://localhost:5000/api/messages");
+    setMessages(res.data);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await axios.post("http://localhost:5000/api/save", { text });
+    setText("");
+    fetchMessages();
+  };
+
+  useEffect(() => {
+    fetchMessages();
+  }, []);
+
   return (
-    <div className="App">
-      <nav>
-        <Link to="/">Home</Link> | <Link to="/about">About</Link> | 
-        <Link to="/counter">Counter</Link> | <Link to="/input">Input</Link> |
-        <Link to="/input2">Input2</Link> | <Link to="/list">List</Link>
-      </nav>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/counter" element={<Counter />} />
-        <Route path="/input" element={<Input />} />
-        <Route path="/input2" element={<Input2 />} />
-        <Route path="/list" element={<List />} />
-      </Routes>
+    <div style={{ padding: "20px"}}>
+        <h1>메시지 저장</h1>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+            placeholder="메시지를 입력하세요"   
+        />
+        <button type="submit">저장</button>
+      </form>
+      <ul>
+        {messages.map((msg) => (
+          <li key={msg.id}>{msg.text}</li>
+        ))}
+      </ul>
     </div>
   );
 }
