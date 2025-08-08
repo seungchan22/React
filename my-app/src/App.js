@@ -4,6 +4,8 @@ import axios from "axios";
 function App() {
   const [text, setText] = useState(""); 
   const [messages, setMessages] = useState([]);
+  const [editText, setEditText] = useState("");
+  const [editId, setEditId] = useState(null);
 
  const fetchMessages = async () => {
     const res = await axios.get("http://localhost:5000/api/messages");
@@ -23,10 +25,28 @@ function App() {
     fetchMessages();
   }
   };
-  
-  useEffect(() => {
+
+  const startEdit = (msg) => {
+    setEditText(msg.text);
+    setEditId(msg.id);
+  };
+
+  const canselEdit = () => {
+    setEditText("");
+    setEditId(null);
+  };
+
+  const submitEdit = async (id) => {
+    if (!editText.trim()) {
+      alert("수정할 메시지를 입력하세요.");
+      return;
+    }
+
+    await axios.put(`http://localhost:5000/api/messages/${id}`, { text: editText });
+    setEditText("");
+    setEditId(null);
     fetchMessages();
-  }, []);
+  };
 
   return (
     <div style={{ padding: "20px"}}>
@@ -59,20 +79,41 @@ function App() {
             {messages.map((msg) => (
               <tr key={msg.id}>
                 <td>{msg.id}</td>
-                <td>{msg.text}</td>
-                <td>{msg.created_at}</td>
                 <td>
-                  <button onClick={() => handleDelete(msg.id)}>삭제</button>
-                </td> 
+                  {editId === msg.id ? (
+                    <input
+                      type="text"
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      style={{width: '100%'}}
+                    />
+                  ) : (
+                       msg.text
+                  )}
+                </td>
+                      <td>{msg.created_at}</td>
+                <td style={{whiteSpace : 'nowrap'}}>
+                  {editId === msg.id ? (
+                    <>                    
+                        <button onClick={() => submitEdit(msg.id)}>저장</button>
+                        <button onClick={canselEdit} style={{marginLeft: 6}}>취소</button>
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={() => startEdit(msg)}>수정</button>
+                      <button onClick={() => handleDelete(msg.id)} style={{marginLeft: 6}}>삭제</button>
+                    </>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
 
-   
     </div>
   );
-}
+} 
+ 
 
 export default App;
