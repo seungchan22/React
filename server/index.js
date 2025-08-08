@@ -25,11 +25,9 @@ db.connect(err => {
 }
 );
 
-
-
-
   app.post('/api/save', (req,res) => {
     const{text} = req.body;
+    
     const sql = 'INSERT INTO messages (text) VALUES (?)';
     db.query(sql, [text], (err, result) => {
       if (err) {
@@ -42,7 +40,7 @@ db.connect(err => {
   });
 
   app.get('/api/messages', (req, res) => {
-    const sql = 'SELECT * FROM messages ORDER BY id DESC';
+    const sql = 'SELECT id, text, DATE_FORMAT(created_at, "%Y-%m-%d %H:%i:%s") AS created_at FROM messages ORDER BY id DESC';
     db.query(sql, (err, results) => {
       if (err) {
         console.error('Error fetching messages: ' + err.stack);
@@ -50,6 +48,39 @@ db.connect(err => {
         return;
       }
       res.status(200).json(results);
+    });
+  });
+
+  app.delete('/api/messages/:id', (req, res) => {
+    const { id } = req.params;
+
+    const sql = 'DELETE FROM messages WHERE id = ?';    
+    db.query(sql, [id], (err, result) => {
+      if (err) {
+        console.error('Error deleting message: ' + err.stack);
+        res.status(500).send('Error deleting message');
+        return;
+      }
+      res.status(200).send('Message deleted successfully');
+    });
+  });
+
+  app.put('/api/messages/:id', (req, res) => {
+    const { id } = req.params;
+    const { text } = req.body;
+
+    if(!text || text.trim() === '') {
+      return res.status(400).send('Text is required');
+    }
+
+    const sql = 'UPDATE messages SET text = ? WHERE id = ?';
+    db.query(sql, [text.trim(), id], (err, result) => {
+      if (err) {
+        console.error('Error updating message: ' + err.stack);
+        res.status(500).send('Error updating message');
+        return;
+      }
+      res.json('Message updated successfully');
     });
   });
 

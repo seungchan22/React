@@ -17,6 +17,13 @@ function App() {
     fetchMessages();
   };
 
+  const handleDelete = async (id) => {
+    if(window.confirm("정말로 삭제하시겠습니까?")) { 
+    await axios.delete(`http://localhost:5000/api/messages/${id}`);
+    fetchMessages();
+  }
+  };
+  
   useEffect(() => {
     fetchMessages();
   }, []);
@@ -33,11 +40,37 @@ function App() {
         />
         <button type="submit">저장</button>
       </form>
-      <ul>
-        {messages.map((msg) => (
-          <li key={msg.id}>{msg.text}</li>
-        ))}
-      </ul>
+
+
+      <h2>메시지 목록</h2>
+      {messages.length === 0 ? (
+        <p>데이터 없음</p>
+      
+      ) : (
+        <table border ="1" cellPadding="5" style={{ marginTop: "10px", borderCollapse: "collapse" }}>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>메시지</th>
+              <th>작성일</th>
+            </tr>
+          </thead>
+          <tbody>
+            {messages.map((msg) => (
+              <tr key={msg.id}>
+                <td>{msg.id}</td>
+                <td>{msg.text}</td>
+                <td>{msg.created_at}</td>
+                <td>
+                  <button onClick={() => handleDelete(msg.id)}>삭제</button>
+                </td> 
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+   
     </div>
   );
 }
