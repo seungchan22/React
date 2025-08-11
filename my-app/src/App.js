@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useCallback} from "react";
 import axios from "axios";
 
 function App() {
@@ -6,18 +6,41 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [editText, setEditText] = useState("");
   const [editId, setEditId] = useState(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const limit = 5;
 
- const fetchMessages = async () => {
-    const res = await axios.get("http://localhost:5000/api/messages");
-    setMessages(res.data);
-  };
+const fetchMessages = useCallback(async () => {
+  const res = await axios.get('http://localhost:5000/api/messages', {
+    params: { search, page, limit }
+  });
+  setMessages(res.data.data);
+  setTotal(res.data.total);
+}, [search, page, limit]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!text.trim()) {
+      alert("메시지를 입력하세요.");
+      return;
+    }
     await axios.post("http://localhost:5000/api/save", { text });
     setText("");
     fetchMessages();
   };
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    setPage(1);
+    fetchMessages();
+  };
+
+  const totalPages = Math.ceil(total / limit);
+
+  useEffect(() => {
+    fetchMessages();
+  }, [fetchMessages]);
 
   const handleDelete = async (id) => {
     if(window.confirm("정말로 삭제하시겠습니까?")) { 
@@ -61,6 +84,15 @@ function App() {
         <button type="submit">저장</button>
       </form>
 
+      <form onSubmit={handleSearch} style={{ marginTop: "10px" }}>
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="검색어를 입력하세요"
+        />
+        <button type="submit">검색</button>
+      </form>
 
       <h2>메시지 목록</h2>
       {messages.length === 0 ? (
@@ -91,7 +123,7 @@ function App() {
                        msg.text
                   )}
                 </td>
-                      <td>{msg.created_at}</td>
+                 <td>{msg.created_at}</td>
                 <td style={{whiteSpace : 'nowrap'}}>
                   {editId === msg.id ? (
                     <>                    
@@ -111,6 +143,17 @@ function App() {
         </table>
       )}
 
+    <div style={{margin: 10}}>
+      {Array.from({length: totalPages}, (_, i) => i +1 ).map(p => (
+          <button key={p} onClick={() => setPage(p)} 
+          style={{ margin: 2, backgroundColor: page === p ? "lightgray" : " " }}>
+          {p}
+        </button>
+      ))}
+      <span>페이지: {page}</span>
+      <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}>이전</button>
+      <button onClick={() => setPage(Math.min(totalPages, page + 1))} disabled={page === totalPages}>다음</button>
+    </div>
     </div>
   );
 } 
