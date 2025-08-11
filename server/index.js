@@ -22,8 +22,27 @@ const db = mysql.createConnection({
 db.connect(err => {
   if (err) throw err;
   console.log('Connected to the database');
-}
-);
+});
+
+// db.getConnection((err, connection) => {
+//   if (err) throw err;
+//   connection.beginTransaction(err => {
+//     if (err) throw err;
+
+//     connection.query(sql, params, (err, result) => {
+//       if (err) {
+//         return connection.rollback(() => connection.release());
+//       }
+//       connection.commit(err => {
+//         if (err) {
+//           return connection.rollback(() => connection.release());
+//         }
+//         connection.release(); // 세션 반환
+//         res.send({ status: 'success' });
+//       });
+//     });
+//   });
+// });
 
   app.post('/api/save', (req,res) => {
     const{text} = req.body;
@@ -92,15 +111,21 @@ db.connect(err => {
     const { id } = req.params;
 
     const sql = 'DELETE FROM messages WHERE id = ?';    
+    db.beginTransaction(err => {
+    if (err) return res.status(500).send('Transaction Error');
     db.query(sql, [id], (err, result) => {
       if (err) {
-        console.error('Error deleting message: ' + err.stack);
-        res.status(500).send('Error deleting message');
-        return;
+        return db.rollback(() => res.status(500).send('DB Error'));
       }
-      res.status(200).send('Message deleted successfully');
+      db.commit(err => {
+        if (err) {
+          return db.rollback(() => res.status(500).send('Commit Error'));
+        }
+        res.send({ status: 'success' });
+      });
     });
   });
+});
 
   app.put('/api/messages/:id', (req, res) => {
     const { id } = req.params;
@@ -111,15 +136,21 @@ db.connect(err => {
     }
 
     const sql = 'UPDATE messages SET text = ? WHERE id = ?';
+     db.beginTransaction(err => {
+    if (err) return res.status(500).send('Transaction Error');
     db.query(sql, [text.trim(), id], (err, result) => {
       if (err) {
-        console.error('Error updating message: ' + err.stack);
-        res.status(500).send('Error updating message');
-        return;
+        return db.rollback(() => res.status(500).send('DB Error'));
       }
-      res.json('Message updated successfully');
+      db.commit(err => {
+        if (err) {
+          return db.rollback(() => res.status(500).send('Commit Error'));
+        }
+        res.json({ status: 'success' });
+      });
     });
   });
+});
 
   app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
